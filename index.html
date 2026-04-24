@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Trainer App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #060a12;
+            --surface: #0c1220;
+            --surface-2: #111827;
+            --card: rgba(13, 19, 33, 0.85);
+            --border: rgba(255, 255, 255, 0.07);
+            --border-bright: rgba(255, 255, 255, 0.14);
+            --text: #eef3ff;
+            --muted: #6b7fa3;
+            --accent: #00e5a0;
+            --accent-dim: rgba(0, 229, 160, 0.12);
+            --accent-glow: rgba(0, 229, 160, 0.35);
+            --blue: #3b82f6;
+            --blue-dim: rgba(59, 130, 246, 0.12);
+            --amber: #f59e0b;
+            --pitch-scale: 1.61;
+            --radius: 20px;
+            --radius-sm: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { min-height: 100%; scroll-behavior: smooth; }
+
+        body {
+            min-height: 100vh;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 48px 24px 80px;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Ambient background blobs */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 60% 40% at 10% 0%, rgba(0, 229, 160, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 50% at 90% 20%, rgba(59, 130, 246, 0.07) 0%, transparent 55%),
+                radial-gradient(ellipse 40% 60% at 50% 100%, rgba(0, 229, 160, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* ─── HEADER ─── */
+        .header {
+            margin-bottom: 40px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 999px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(0, 229, 160, 0.2);
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .header-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(2.2rem, 4vw, 3.4rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.65) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+
+        .instructions {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            margin-top: 24px;
+        }
+
+        .instructions-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            margin-bottom: 14px;
+        }
+
+        .instructions ol {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .instructions li {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            font-size: 0.88rem;
+            color: #8da0c0;
+            line-height: 1.5;
+        }
+
+        .instructions li .step-num {
+            flex-shrink: 0;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--accent-dim);
+            border: 1px solid rgba(0, 229, 160, 0.25);
+            color: var(--accent);
+            font-size: 0.7rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1px;
+        }
+
+        /* ─── SECTION LABELS ─── */
+        .section-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            margin-bottom: 20px;
+        }
+
+        .section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ─── CARDS / PANELS ─── */
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        /* ─── FIELDSETS ─── */
+        fieldset {
+            border: none;
+            padding: 0;
+        }
+
+        .drill-block {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 20px;
+            transition: border-color 200ms ease;
+        }
+
+        .drill-block:hover {
+            border-color: var(--border-bright);
+        }
+
+        .drill-block legend {
+            padding: 0 0 14px;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            display: block;
+            width: 100%;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
+        .drill-block.counter legend { color: var(--accent); }
+        .drill-block.gym legend { color: var(--blue); }
+        .drill-block.sprint legend { color: var(--amber); }
+
+        .drill-block.counter { border-color: rgba(0, 229, 160, 0.12); }
+        .drill-block.gym { border-color: rgba(59, 130, 246, 0.12); }
+        .drill-block.sprint { border-color: rgba(245, 158, 11, 0.12); }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .row { display: grid; gap: 6px; }
+
+        label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #8da0c0;
+            letter-spacing: 0.01em;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.92rem;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text);
+            background: rgba(255,255,255,0.04);
+            outline: none;
+            transition: border-color 150ms, box-shadow 150ms, background 150ms;
+            appearance: none;
+        }
+
+        input::placeholder { color: #3d4f6a; }
+
+        input:focus {
+            border-color: rgba(0, 229, 160, 0.5);
+            box-shadow: 0 0 0 3px rgba(0, 229, 160, 0.1);
+            background: rgba(255,255,255,0.06);
+        }
+
+        .row-disabled { opacity: 0.35; pointer-events: none; }
+        .row-disabled input { cursor: not-allowed; }
+
+        /* ─── LAYOUT ─── */
+        .focus-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .focus-left {
+            display: grid;
+            gap: 14px;
+        }
+
+        .focus-right {
+            position: sticky;
+            top: 20px;
+        }
+
+        /* ─── PITCH ─── */
+        .position-panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .position-panel .section-label {
+            margin-bottom: 14px;
+        }
+
+        .pitch-picker {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 510 / 818;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+
+        .pitch-picker::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            background: url("football-pitch.jpg") center center / contain no-repeat;
+            transform: translate(-50%, -50%) rotate(90deg) scale(var(--pitch-scale));
+            transform-origin: center center;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .pitch-picker::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg,
+                rgba(6,10,18,0.1) 0%,
+                rgba(6,10,18,0.05) 50%,
+                rgba(6,10,18,0.15) 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .pitch-option {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: clamp(68px, 17vw, 96px);
+            height: clamp(48px, 11vw, 66px);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 10px;
+            background: rgba(10, 16, 30, 0.78);
+            color: rgba(255,255,255,0.82);
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(0.72rem, 1.6vw, 0.88rem);
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            z-index: 2;
+            transition: all 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+
+        .pitch-option:hover {
+            background: rgba(25, 35, 58, 0.9);
+            transform: translate(-50%, -50%) scale(1.08);
+            border-color: rgba(255,255,255,0.3);
+            color: #fff;
+        }
+
+        .pitch-option.selected {
+            background: linear-gradient(135deg, rgba(0,229,160,0.95), rgba(0,195,130,0.9));
+            color: #021a0f;
+            border-color: rgba(0,229,160,0.8);
+            box-shadow: 0 0 0 3px rgba(0,229,160,0.2), 0 8px 24px rgba(0,229,160,0.3);
+            transform: translate(-50%, -50%) scale(1.06);
+        }
+
+        .pitch-option:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .pitch-option.st  { top: 11.8%; left: 50%; }
+        .pitch-option.aml { top: 30.6%; left: 17.2%; }
+        .pitch-option.amc { top: 30.6%; left: 50%; }
+        .pitch-option.amr { top: 30.6%; left: 82.8%; }
+        .pitch-option.ml  { top: 47.6%; left: 17.2%; }
+        .pitch-option.mc  { top: 47.6%; left: 50%; }
+        .pitch-option.mr  { top: 47.6%; left: 82.8%; }
+        .pitch-option.dmc { top: 61.4%; left: 50%; }
+        .pitch-option.dl  { top: 77.2%; left: 17.2%; }
+        .pitch-option.dc  { top: 77.2%; left: 50%; }
+        .pitch-option.dr  { top: 77.2%; left: 82.8%; }
+        .pitch-option.gk  { top: 89.4%; left: 50%; }
+
+        .position-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 14px;
+            border-radius: 999px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(0,229,160,0.2);
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #a7f3d0;
+            margin-bottom: 12px;
+        }
+
+        .position-badge strong {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        /* ─── BUTTONS ─── */
+        button:not(.pitch-option) {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 13px 28px;
+            border: none;
+            border-radius: 999px;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: all 160ms ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, #00c98a 100%);
+            color: #021a0f;
+            box-shadow: 0 0 0 0 var(--accent-glow), 0 8px 24px rgba(0,229,160,0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 0 4px rgba(0,229,160,0.15), 0 16px 32px rgba(0,229,160,0.3);
+        }
+
+        .btn-primary:active { transform: translateY(0); }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--blue) 0%, #2563eb 100%);
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(59,130,246,0.2);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 32px rgba(59,130,246,0.3);
+        }
+
+        /* ─── RESULTS ─── */
+        .result {
+            display: none;
+            margin-top: 16px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .result-inner {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .result-header {
+            padding: 10px 16px;
+            background: rgba(0,229,160,0.08);
+            border-bottom: 1px solid rgba(0,229,160,0.12);
+            font-family: 'Syne', sans-serif;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .result-body {
+            padding: 16px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .result-line {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #8da0c0;
+        }
+
+        .result-line .value {
+            font-weight: 600;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .result-line.highlight {
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(0,229,160,0.18);
+            color: #a7f3d0;
+            margin-top: 4px;
+        }
+
+        .result-line.highlight .value {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .result.error .result-inner {
+            border-color: rgba(239,68,68,0.25);
+        }
+
+        .result.error .result-header {
+            background: rgba(239,68,68,0.08);
+            border-bottom-color: rgba(239,68,68,0.15);
+            color: #f87171;
+        }
+
+        .result.error .result-body {
+            color: #fca5a5;
+        }
+
+        /* ─── TRAINER TYPE BADGE ─── */
+        .trainer-type-badge {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(0,229,160,0.12), rgba(59,130,246,0.08));
+            border: 1px solid rgba(0,229,160,0.2);
+            margin-top: 6px;
+        }
+
+        .trainer-type-badge .type-label {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--accent);
+            letter-spacing: -0.02em;
+        }
+
+        .trainer-type-badge .type-sub {
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+
+        /* ─── STEP 2 FORM ─── */
+        .step2-panel {
+            margin-top: 16px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            backdrop-filter: blur(20px);
+            animation: slideIn 300ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hidden { display: none; }
+
+        small {
+            display: block;
+            color: var(--muted);
+            font-size: 0.78rem;
+            margin-bottom: 14px;
+        }
+
+        /* ─── DIVIDER ─── */
+        .form-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        /* ─── FOOTER ─── */
+        footer {
+            text-align: center;
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 0.8rem;
+        }
+
+        footer span {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 780px) {
+            body { padding: 20px 16px 60px; }
+
+            .focus-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .focus-right {
+                position: static;
+                order: -1;
+            }
+
+            .grid { grid-template-columns: 1fr; }
+
+            button:not(.pitch-option) { width: 100%; }
+
+            .pitch-option {
+                width: clamp(62px, 22vw, 90px);
+                height: clamp(44px, 13vw, 62px);
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-badge">Top Eleven Tool</div>
+        <h1>Fast Trainer<br>Calculator</h1>
+
+        <div class="instructions">
+            <div class="instructions-title">How to use</div>
+            <ol>
+                <li><span class="step-num">1</span> Select the position of your player (ST, AMC, GK etc.) on the pitch.</li>
+                <li><span class="step-num">2</span> Enter the required skills of your player in the fields below.</li>
+                <li><span class="step-num">3</span> Press "Calculate Lowest Average" — this tells you which drill to use.</li>
+                <li><span class="step-num">4</span> Choose a new skill or position for your player for testing fast training level. You can pause it after checking.</li>
+                <li><span class="step-num">5</span> After training you'll get +1 or +2 progress. Enter results and repeat 7 total times, then calculate your Fast Trainer Type.</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- STEP 1 FORM -->
+    <div class="panel">
+        <form id="focus-form">
+            <div class="focus-layout">
+                <div class="focus-left">
+                    <div class="section-label">Drill Categories</div>
+
+                    <fieldset>
+                        <div class="drill-block counter">
+                            <legend>⚡ Fast Counter Attacks</legend>
+                            <div class="grid">
+                                <div class="row">
+                                    <label for="crossing">Crossing</label>
+                                    <input type="number" id="crossing" name="crossing" min="0" max="300" placeholder="0–300" required>
+                                </div>
+                                <div class="row">
+                                    <label for="passing">Passing</label>
+                                    <input type="number" id="passing" name="passing" min="0" max="300" placeholder="0–300" required>
+                                </div>
+                                <div class="row">
+                                    <label for="creativity">Creativity</label>
+                                    <input type="number" id="creativity" name="creativity" min="0" max="300" placeholder="0–300" required>
+                                </div>
+                                <div class="row">
+                                    <label for="finishing">Finishing</label>
+                                    <input type="number" id="finishing" name="finishing" min="0" max="300" placeholder="0–300" required>
+                                </div>
+                                <div class="row">
+                                    <label for="communication-fast">Communication</label>
+                                    <input type="number" id="communication-fast" name="communicationFast" min="0" max="300" placeholder="0–300" required>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <div class="drill-block gym">
+                            <legend>🏋️ Gym</legend>
+                            <div class="grid">
+                                <div class="row">
+                                    <label for="strength">Strength</label>
+                                    <input type="number" id="strength" name="strength" min="0" max="300" placeholder="0–300" required>
+                                </div>
+                                <div class="row">
+                                    <label for="throwing">Throwing</label>
+                                    <input type="number" id="throwing" name="throwing" min="0" max="300" placeholder="0–300" required>
+                                </div>
+                                <div class="row">
+                                    <label for="kicking">Kicking</label>
+                                    <input type="number" id="kicking" name="kicking" min="0" max="300" placeholder="0–300" required>
+                                </div>
+                                <div class="row">
+                                    <label for="fitness-gym">Fitness</label>
+                                    <input type="number" id="fitness-gym" name="fitnessGym" min="0" max="300" placeholder="0–300" required>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset>
+                        <div class="drill-block sprint">
+                            <legend>🏃 Sprint</legend>
+                            <div class="grid">
+                                <div class="row">
+                                    <label for="speed">Speed</label>
+                                    <input type="number" id="speed" name="speed" min="0" max="300" placeholder="0–300" required>
+                                </div>
+                                <div class="row">
+                                    <label for="dribbling">Dribbling</label>
+                                    <input type="number" id="dribbling" name="dribbling" min="0" max="300" placeholder="0–300" required>
+                                </div>
+                                <div class="row">
+                                    <label for="fitness-sprint">Fitness</label>
+                                    <input type="number" id="fitness-sprint" name="fitnessSprint" min="0" max="300" placeholder="0–300" required>
+                                </div>
+                                <div class="row">
+                                    <label for="rushing-out">Rushing Out</label>
+                                    <input type="number" id="rushing-out" name="rushingOut" min="0" max="300" placeholder="0–300" required>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+
+                <!-- RIGHT: Pitch -->
+                <div class="focus-right">
+                    <div class="position-panel">
+                        <div class="section-label">Player Position</div>
+                        <input type="hidden" id="player-position" name="playerPosition">
+                        <div class="position-badge" id="position-selected">
+                            Selected: <strong id="position-selected-value">None</strong>
+                        </div>
+                        <div class="pitch-picker" aria-label="Select player position on a football pitch">
+                            <button type="button" class="pitch-option st" data-position="ST">ST</button>
+                            <button type="button" class="pitch-option aml" data-position="AML">AML</button>
+                            <button type="button" class="pitch-option amc" data-position="AMC">AMC</button>
+                            <button type="button" class="pitch-option amr" data-position="AMR">AMR</button>
+                            <button type="button" class="pitch-option ml" data-position="ML">ML</button>
+                            <button type="button" class="pitch-option mc" data-position="MC">MC</button>
+                            <button type="button" class="pitch-option mr" data-position="MR">MR</button>
+                            <button type="button" class="pitch-option dmc" data-position="DMC">DMC</button>
+                            <button type="button" class="pitch-option dl" data-position="DL">DL</button>
+                            <button type="button" class="pitch-option dc" data-position="DC">DC</button>
+                            <button type="button" class="pitch-option dr" data-position="DR">DR</button>
+                            <button type="button" class="pitch-option gk" data-position="GK">GK</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+                <small>Values of 0 are excluded from averages. Fill in relevant stats for your player's position.</small>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Calculate Lowest Average →</button>
+                </div>
+                <div id="focus-result" class="result" aria-live="polite">
+                    <div class="result-inner">
+                        <div class="result-header">Step 1 — Drill Recommendation</div>
+                        <div class="result-body" id="focus-result-body"></div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- STEP 2 FORM -->
+    <div id="training-form-wrapper" class="step2-panel hidden">
+        <form id="training-form">
+            <div class="section-label">Step 2 — Training Results</div>
+            <fieldset>
+                <div class="drill-block" style="border-color: rgba(59,130,246,0.15);">
+                    <legend style="color: var(--blue);">Enter 7 Training Results</legend>
+                    <div class="grid">
+                        <div class="row">
+                            <label for="result-1">Result 1</label>
+                            <input type="number" id="result-1" name="result1" min="0" max="3" placeholder="1 or 2 or 3" required>
+                        </div>
+                        <div class="row">
+                            <label for="result-2">Result 2</label>
+                            <input type="number" id="result-2" name="result2" min="0" max="3" placeholder="1 or 2 or 3" required>
+                        </div>
+                        <div class="row">
+                            <label for="result-3">Result 3</label>
+                            <input type="number" id="result-3" name="result3" min="0" max="3" placeholder="1 or 2 or 3" required>
+                        </div>
+                        <div class="row">
+                            <label for="result-4">Result 4</label>
+                            <input type="number" id="result-4" name="result4" min="0" max="3" placeholder="1 or 2 or 3" required>
+                        </div>
+                        <div class="row">
+                            <label for="result-5">Result 5</label>
+                            <input type="number" id="result-5" name="result5" min="0" max="3" placeholder="1 or 2 or 3" required>
+                        </div>
+                        <div class="row">
+                            <label for="result-6">Result 6</label>
+                            <input type="number" id="result-6" name="result6" min="0" max="3" placeholder="1 or 2 or 3" required>
+                        </div>
+                        <div class="row">
+                            <label for="result-7">Result 7</label>
+                            <input type="number" id="result-7" name="result7" min="0" max="3" placeholder="1 or 2 or 3" required>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div style="margin-top: 20px;">
+                <small>Enter the +1 or +2 progress you received for each of the 7 training sessions.</small>
+                <div class="form-actions">
+                    <button type="submit" class="btn-secondary">Calculate Fast Trainer Type →</button>
+                </div>
+                <div id="trainer-result" class="result" aria-live="polite">
+                    <div class="result-inner">
+                        <div class="result-header">Step 2 — Fast Trainer Type</div>
+                        <div class="result-body" id="trainer-result-body"></div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<footer>
+    <p>&copy; 2026 Top Eleven Fast Trainer Calculator &mdash; by <span>Hamza Sipkovic</span></p>
+</footer>
+
+<script>
+    const focusForm = document.getElementById("focus-form");
+    const trainingForm = document.getElementById("training-form");
+    const trainingWrapper = document.getElementById("training-form-wrapper");
+    const focusResult = document.getElementById("focus-result");
+    const focusResultBody = document.getElementById("focus-result-body");
+    const trainerResult = document.getElementById("trainer-result");
+    const trainerResultBody = document.getElementById("trainer-result-body");
+    const positionInput = document.getElementById("player-position");
+    const positionValue = document.getElementById("position-selected-value");
+    const pitchButtons = document.querySelectorAll(".pitch-option");
+
+    const disabledForOutfield = ["communicationFast", "throwing", "kicking", "rushingOut"];
+    const disabledForGK = ["crossing", "passing", "finishing", "dribbling"];
+    const managedFields = [...new Set([...disabledForOutfield, ...disabledForGK])];
+
+    function applyPositionFieldRules(position) {
+        const fieldsToDisable = position === "GK" ? disabledForGK : disabledForOutfield;
+        managedFields.forEach((fieldName) => {
+            const input = focusForm.elements[fieldName];
+            if (!input) return;
+            const isDisabled = fieldsToDisable.includes(fieldName);
+            const row = input.closest(".row");
+            input.disabled = isDisabled;
+            input.required = !isDisabled;
+            if (isDisabled) input.value = "0";
+            if (row) row.classList.toggle("row-disabled", isDisabled);
+        });
+    }
+
+    function setPosition(position) {
+        positionInput.value = position;
+        positionValue.textContent = position;
+        pitchButtons.forEach((button) => {
+            button.classList.toggle("selected", button.dataset.position === position);
+        });
+        applyPositionFieldRules(position);
+    }
+
+    pitchButtons.forEach((button) => {
+        button.addEventListener("click", () => setPosition(button.dataset.position));
+    });
+
+    function calculateAverage(values) {
+        const filtered = values.filter((v) => v > 0);
+        if (filtered.length === 0) return null;
+        return filtered.reduce((sum, v) => sum + v, 0) / filtered.length;
+    }
+
+    function getTrainerType(vals) {
+        const pattern = vals.join("");
+        const exactScale = {
+            "1111111": "Terrible", "1112112": "Bad", "1212121": "Normal",
+            "1222122": "Good", "1222222": "Excellent", "2222222": "World Class"
+        };
+        if (exactScale[pattern]) return exactScale[pattern];
+        const total = vals.reduce((sum, v) => sum + v, 0);
+        if (total <= 8) return "Bad";
+        if (total <= 10) return "Normal";
+        if (total <= 12) return "Good";
+        if (total <= 13) return "Excellent";
+        return "World Class";
+    }
+
+    focusForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        if (!positionInput.value) {
+            focusResult.classList.add("error");
+            focusResult.style.display = "block";
+            focusResultBody.innerHTML = '<div class="result-line">⚠ Select a player position on the pitch first.</div>';
+            return;
+        }
+
+        const sections = [
+            { name: "Fast Counter Attacks", values: ["crossing","passing","creativity","finishing","communicationFast"].map((k) => Number(focusForm.elements[k].value)) },
+            { name: "Gym", values: ["strength","throwing","kicking","fitnessGym"].map((k) => Number(focusForm.elements[k].value)) },
+            { name: "Sprint", values: ["speed","dribbling","fitnessSprint","rushingOut"].map((k) => Number(focusForm.elements[k].value)) }
+        ];
+
+        const averages = sections.map((s) => ({ name: s.name, average: calculateAverage(s.values) }));
+        const validAverages = averages.filter((s) => s.average !== null);
+
+        focusResult.classList.remove("error");
+        focusResult.style.display = "block";
+
+        if (validAverages.length === 0) {
+            focusResult.classList.add("error");
+            focusResultBody.innerHTML = '<div class="result-line">Enter at least one value greater than 0.</div>';
+            return;
+        }
+
+        const lowest = validAverages.reduce((lo, s) => s.average < lo.average ? s : lo);
+
+        focusResultBody.innerHTML =
+            averages.map((a) => `<div class="result-line">
+                <span>${a.name}</span>
+                <span class="value">${a.average === null ? "N/A" : a.average.toFixed(2)}</span>
+            </div>`).join("") +
+            `<div class="result-line highlight">
+                <span>Use drill →</span>
+                <span class="value">${lowest.name} (${lowest.average.toFixed(2)})</span>
+            </div>`;
+
+        trainingWrapper.classList.remove("hidden");
+        trainerResult.style.display = "none";
+        trainingWrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    trainingForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const vals = ["result1","result2","result3","result4","result5","result6","result7"]
+            .map((k) => Number(trainingForm.elements[k].value));
+        const type = getTrainerType(vals);
+
+        trainerResult.classList.remove("error");
+        trainerResult.style.display = "block";
+        trainerResultBody.innerHTML =
+            `<div class="result-line"><span>Training pattern</span><span class="value">${vals.join(" · ")}</span></div>` +
+            `<div class="trainer-type-badge">
+                <div>
+                    <div class="type-sub">Fast Trainer Type</div>
+                    <div class="type-label">${type}</div>
+                </div>
+            </div>`;
+    });
+</script>
+</body>
+</html>
